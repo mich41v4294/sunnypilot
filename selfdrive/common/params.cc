@@ -182,6 +182,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"TurnVisionControl", PERSISTENT},
     {"UpdateAvailable", CLEAR_ON_MANAGER_START},
     {"UpdateFailedCount", CLEAR_ON_MANAGER_START},
+    {"UploadRaw", PERSISTENT},
     {"Version", PERSISTENT},
     {"VwAccType", PERSISTENT},
     {"VisionRadarToggle", PERSISTENT},

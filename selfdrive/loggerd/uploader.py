@@ -71,10 +71,16 @@ class Uploader():
 
     self.immediate_folders = ["crash/", "boot/"]
     self.immediate_priority = {"qlog.bz2": 0, "qcamera.ts": 1}
+    self.high_priority = {"rlog.bz2": 0}
+    self.normal_priority = {"fcamera.hevc": 1, "dcamera.hevc": 2, "ecamera.hevc": 3}
 
   def get_upload_sort(self, name):
     if name in self.immediate_priority:
       return self.immediate_priority[name]
+    if name in self.high_priority:
+      return self.high_priority[name] + 100
+    if name in self.normal_priority:
+      return self.normal_priority[name] + 300
     return 1000
 
   def list_upload_files(self):
@@ -115,7 +121,7 @@ class Uploader():
 
         yield (name, key, fn)
 
-  def next_file_to_upload(self):
+  def next_file_to_upload(self, with_raw):
     upload_files = list(self.list_upload_files())
 
     for name, key, fn in upload_files:
@@ -125,6 +131,17 @@ class Uploader():
     for name, key, fn in upload_files:
       if name in self.immediate_priority:
         return (key, fn)
+
+    if with_raw:
+      # then upload the full log files, rear and front camera files
+      for name, key, fn in upload_files:
+        if name in self.high_priority:
+          return (key, fn)
+
+      # Could add a param here to disable full video uploads
+      for name, key, fn in upload_files:
+        if name in self.normal_priority:
+          return (key, fn)
 
     return None
 
@@ -252,23 +269,9 @@ def uploader_fn(exit_event):
         time.sleep(60 if offroad else 5)
       continue
 
-    if params.get_bool("DisableOnroadUploads"):
-      if not offroad or (transition_to_offroad_last > 0. and t - transition_to_offroad_last < disable_onroad_upload_offroad_transition_timeout):
-        if not offroad:
-          cloudlog.info("not uploading: onroad uploads disabled")
-        else:
-          wait_minutes = int(disable_onroad_upload_offroad_transition_timeout / 60)
-          time_left = disable_onroad_upload_offroad_transition_timeout - (t - transition_to_offroad_last)
-          if (time_left / 60. > 2.):
-            time_left_str = f"{int(time_left / 60)} minute(s)"
-          else:
-            time_left_str = f"{int(time_left)} seconds(s)"
-          cloudlog.info(f"not uploading: waiting until offroad for {wait_minutes} minutes; {time_left_str} left")
-        if allow_sleep:
-          time.sleep(60)
-        continue
+    allow_raw_upload = params.get_bool("UploadRaw")
 
-    d = uploader.next_file_to_upload()
+    d = uploader.next_file_to_upload(with_raw=allow_raw_upload)
     if d is None:  # Nothing to upload
       if allow_sleep:
         time.sleep(60 if offroad else 5)
