@@ -30,7 +30,7 @@ TIME_OUT=1000
 
 last_debug_mode = 0
 pm = None
-op_params = None
+#op_params = None
 
 # struct LiveMapData
 #   speedLimitValid @0 :Bool;
@@ -103,7 +103,7 @@ def process_phone_data(sync_data):
 
     global last_debug_mode
     global pm
-    global op_params
+    #global op_params
 
     try:
       parsed_json = json.loads(sync_data_str)
@@ -193,14 +193,14 @@ def main():
 
   global last_debug_mode
   global pm
-  global op_params
+  #global op_params
 
   print ('************************************************** phone_control start **************************************************')
   os.system('cp /data/openpilot/continue.sh /data/data/com.termux/files/; sync')
   os.system('cp /data/openpilot/op_params.json /data/; sync')
 
-  op_params = opParams()
-  clear_params(op_params)
+  #op_params = opParams()
+  #clear_params(op_params)
 
   ip = try_to_connect()
   last_ip = None
@@ -261,7 +261,7 @@ def main():
       live_map_data.speedAdvisoryValid = False
       live_map_data.speedAdvisory = 0
       live_map_data.wayId = 0
-      live_map_data.speedLimitAhead = op_params.get('lane_offset')
+      live_map_data.speedLimitAhead = 0 #op_params.get('lane_offset')
 
       pm.send('liveMapData', dat)
 
