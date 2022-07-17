@@ -18,7 +18,7 @@ import json
 #from common.op_params import opParams
 import sys
 import subprocess
-from common.hardware import HARDWARE
+#from common.hardware import HARDWARE
 from cereal import log
 
 NetworkType = log.ThermalData.NetworkType
@@ -87,7 +87,7 @@ def try_to_connect(last_ip=None):
     return None
 
 def is_on_wifi():
-  return HARDWARE.get_network_type() == NetworkType.wifi
+  return true #HARDWARE.get_network_type() == NetworkType.wifi
 
 def create_sub_sock(ip, my_content, timeout):
     os.environ["ZMQ"] = "1"
