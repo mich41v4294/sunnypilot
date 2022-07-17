@@ -21,7 +21,7 @@ import subprocess
 #from common.hardware import HARDWARE
 from cereal import log
 
-NetworkType = log.ThermalData.NetworkType
+#NetworkType = log.ThermalData.NetworkType
 
 IP_LIST = ['192.168.43.94', '192.168.1.211'] #'192.168.43.138',
 OP_SIM = '/tmp/op_simulation'
