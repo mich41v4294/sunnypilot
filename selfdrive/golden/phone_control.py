@@ -15,7 +15,7 @@ import requests
 import cereal.messaging.messaging_pyx as messaging_pyx
 import datetime
 import json
-from common.op_params import opParams
+#from common.op_params import opParams
 import sys
 import subprocess
 from common.hardware import HARDWARE
