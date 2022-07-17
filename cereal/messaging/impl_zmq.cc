@@ -19,7 +19,7 @@ static int get_port(std::string endpoint) {
     }
   }
 
-  assert(port >= 0);
+  //assert(port >= 0);
   return port;
 }
 
