@@ -153,7 +153,7 @@ def process_phone_data(sync_data):
       live_map_data.speedAdvisoryValid = has_exit
       live_map_data.speedAdvisory = remain_dist
       live_map_data.wayId = nav_icon
-      live_map_data.speedLimitAhead = op_params.get('lane_offset')
+      live_map_data.speedLimitAhead = 0 #op_params.get('lane_offset')
 
       pm.send('liveMapData', dat)
 
