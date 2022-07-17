@@ -2,7 +2,7 @@
 const int VOLKSWAGEN_MAX_STEER = 300;               // 3.0 Nm (EPS side max of 3.0Nm with fault if violated)
 const int VOLKSWAGEN_MAX_RT_DELTA = 75;             // 4 max rate up * 50Hz send rate * 250000 RT interval / 1000000 = 50 ; 50 * 1.5 for safety pad = 75
 const uint32_t VOLKSWAGEN_RT_INTERVAL = 250000;     // 250ms between real time checks
-const int VOLKSWAGEN_MAX_RATE_UP = 10;               // 5.0 Nm/s RoC limit (EPS rack has own soft-limit of 5.0 Nm/s)
+const int VOLKSWAGEN_MAX_RATE_UP = 4;               // 2.0 Nm/s RoC limit (EPS rack has own soft-limit of 5.0 Nm/s)
 const int VOLKSWAGEN_MAX_RATE_DOWN = 10;            // 5.0 Nm/s RoC limit (EPS rack has own soft-limit of 5.0 Nm/s)
 const int VOLKSWAGEN_DRIVER_TORQUE_ALLOWANCE = 80;
 const int VOLKSWAGEN_DRIVER_TORQUE_FACTOR = 3;
@@ -179,6 +179,10 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
       int cruise_engaged = ((acc_status == 3) || (acc_status == 4) || (acc_status == 5)) ? 1 : 0;
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
+        controls_allowed_long = 1;
+      }
+      if (!cruise_engaged) {
+        controls_allowed_long = 0;
       }
       cruise_engaged_prev = cruise_engaged;
     }
@@ -210,6 +214,7 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
       {
         disengageFromBrakes = false;
         controls_allowed = 0;
+        controls_allowed_long = 0;
       }
       acc_main_on_prev = acc_main_on;
     }
@@ -351,9 +356,17 @@ static int volkswagen_mqb_tx_hook(CANPacket_t *to_send) {
 
   // FORCE CANCEL: ensuring that only the cancel button press is sent when controls are off.
   // This avoids unintended engagements while still allowing resume spam
-  if ((addr == MSG_GRA_ACC_01) && !controls_allowed) {
+  if (addr == MSG_GRA_ACC_01) {
     // disallow resume and set: bits 16 and 19
-    if ((GET_BYTE(to_send, 2) & 0x9U) != 0U) {
+    /**if (((GET_BYTE(to_send, 2) & 0x9U) != 0U) || ((GET_BYTE(to_send, 2) & 0x6U) != 0U)) {
+      tx = 0;
+    }**/
+    bool allowed_set_cruise = ((GET_BYTE(to_send, 2) & 0x1U) != 0U) && controls_allowed && controls_allowed_long;
+    bool allowed_resume_cruise = ((GET_BYTE(to_send, 2) & 0x8U) != 0U) && controls_allowed && controls_allowed_long;
+    bool allowed_accel_cruise = ((GET_BYTE(to_send, 2) & 0x2U) != 0U) && controls_allowed && controls_allowed_long;
+    bool allowed_decel_cruise = ((GET_BYTE(to_send, 2) & 0x4U) != 0U) && controls_allowed && controls_allowed_long;
+    bool allowed_cancel = ((GET_BYTE(to_send, 1) & 0x20U) != 0U) && cruise_engaged_prev;
+    if (!(allowed_set_cruise || allowed_resume_cruise || allowed_accel_cruise || allowed_decel_cruise || allowed_cancel)) {
       tx = 0;
     }
   }

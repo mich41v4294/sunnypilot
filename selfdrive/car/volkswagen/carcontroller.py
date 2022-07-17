@@ -142,49 +142,60 @@ class CarController():
     # FIXME: this entire section is in desperate need of refactoring
 
     if CS.CP.pcmCruise:
-      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP:
-        if not enabled and CS.out.cruiseState.enabled:
-          # Cancel ACC if it's engaged with OP disengaged.
-          self.graButtonStatesToSend = BUTTON_STATES.copy()
-          self.graButtonStatesToSend["cancel"] = True
-        elif (enabled and CS.out.cruiseState.enabled) and CS.esp_hold_confirmation:
-          self.standstill_status = 1
-          # Blip the Resume button if we're engaged at standstill.
-          # FIXME: This is a naive implementation, improve with visiond or radar input.
-          self.graButtonStatesToSend = BUTTON_STATES.copy()
-          self.graButtonStatesToSend["resumeCruise"] = True
-      if frame > self.graMsgStartFramePrev:
-        if not ((enabled and CS.out.cruiseState.enabled) and CS.esp_hold_confirmation) and (enabled and CS.cruise_active):
-          cruise_button = self.get_cruise_buttons(CS)
-          if cruise_button is not None and self.graMsgSentCount == 0:
-            if self.acc_type == 0:
-              if cruise_button == 1:
-                self.graButtonStatesToSend = BUTTON_STATES.copy()
-                self.graButtonStatesToSend["accelCruise"] = True
-              elif cruise_button == 2:
-                self.graButtonStatesToSend = BUTTON_STATES.copy()
-                self.graButtonStatesToSend["decelCruise"] = True
-            elif self.acc_type == 1:
-              if cruise_button == 1:
-                self.graButtonStatesToSend = BUTTON_STATES.copy()
-                self.graButtonStatesToSend["resumeCruise"] = True
-              elif cruise_button == 2:
-                self.graButtonStatesToSend = BUTTON_STATES.copy()
-                self.graButtonStatesToSend["setCruise"] = True
-            print("self.get_cruise_buttons(CS) = " + str(cruise_button))
-            print("SPAMMING")
+      if (not enabled and CS.out.cruiseState.enabled) or (enabled and CS.out.cruiseState.enabled and CS.esp_hold_confirmation):
+        if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP:
+          if not enabled and CS.out.cruiseState.enabled:
+            # Cancel ACC if it's engaged with OP disengaged.
+            self.graButtonStatesToSend = BUTTON_STATES.copy()
+            self.graButtonStatesToSend["cancel"] = True
+          elif (enabled and CS.out.cruiseState.enabled) and CS.esp_hold_confirmation:
+            self.standstill_status = 1
+            # Blip the Resume button if we're engaged at standstill.
+            # FIXME: This is a naive implementation, improve with visiond or radar input.
+            self.graButtonStatesToSend = BUTTON_STATES.copy()
+            self.graButtonStatesToSend["resumeCruise"] = True
 
-      if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
-        self.graMsgBusCounterPrev = CS.graMsgBusCounter
-        if self.graButtonStatesToSend is not None:
-          if self.graMsgSentCount == 0:
-            self.graMsgStartFramePrev = frame
-          idx = (CS.graMsgBusCounter + 1) % 16
-          can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
-          self.graMsgSentCount += 1
-          if self.graMsgSentCount >= P.GRA_VBP_COUNT / 8:
-            self.graButtonStatesToSend = None
-            self.graMsgSentCount = 0
+        if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
+          self.graMsgBusCounterPrev = CS.graMsgBusCounter
+          if self.graButtonStatesToSend is not None:
+            if self.graMsgSentCount == 0:
+              self.graMsgStartFramePrev = frame
+            idx = (CS.graMsgBusCounter + 1) % 16
+            can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
+            self.graMsgSentCount += 1
+            if self.graMsgSentCount >= P.GRA_VBP_COUNT:
+              self.graButtonStatesToSend = None
+              self.graMsgSentCount = 0
+      elif not CS.esp_hold_confirmation and CS.out.cruiseState.enabled and not CS.out.gasPressed:
+        if frame > self.graMsgStartFramePrev:
+          if CS.out.cruiseState.enabled:
+            cruise_button = self.get_cruise_buttons(CS)
+            if cruise_button is not None and self.graMsgSentCount == 0:
+              if self.acc_type == 0:
+                if cruise_button == 1:
+                  self.graButtonStatesToSend = BUTTON_STATES.copy()
+                  self.graButtonStatesToSend["accelCruise"] = True
+                elif cruise_button == 2:
+                  self.graButtonStatesToSend = BUTTON_STATES.copy()
+                  self.graButtonStatesToSend["decelCruise"] = True
+              elif self.acc_type == 1:
+                if cruise_button == 1:
+                  self.graButtonStatesToSend = BUTTON_STATES.copy()
+                  self.graButtonStatesToSend["resumeCruise"] = True
+                elif cruise_button == 2:
+                  self.graButtonStatesToSend = BUTTON_STATES.copy()
+                  self.graButtonStatesToSend["setCruise"] = True
+        if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
+          self.graMsgBusCounterPrev = CS.graMsgBusCounter
+          if self.graButtonStatesToSend is not None:
+            if self.graMsgSentCount == 0:
+              self.graMsgStartFramePrev = frame
+            idx = (CS.graMsgBusCounter + 1) % 16
+            can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
+            self.graMsgSentCount += 1
+            if self.graMsgSentCount >= 3:
+              self.graButtonStatesToSend = None
+              self.graMsgSentCount = 0
 
     if CS.out.brakeLights and CS.out.vEgo < 0.1:
       self.standstill_status = 1
@@ -269,25 +280,23 @@ class CarController():
     return None
 
   def type_1(self):
-    cruise_button = None
+    cruise_button = 1
     self.button_count += 1
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 20:
-      cruise_button = 1
+    elif self.button_count > 5:
       self.button_count = 0
       self.button_type = 3
     return cruise_button
 
   def type_2(self):
-    cruise_button = None
+    cruise_button = 2
     self.button_count += 1
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 20:
-      cruise_button = 2
+    elif self.button_count > 5:
       self.button_count = 0
       self.button_type = 3
     return cruise_button
