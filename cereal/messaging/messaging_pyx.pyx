@@ -119,6 +119,24 @@ cdef class SubSocket:
 
       return m
 
+  # golden patched
+  def receive_golden(self, bool non_blocking=False):
+    msg = self.socket.receive(non_blocking)
+
+    if msg == NULL:
+      # If a blocking read returns no message check errno if SIGINT was caught in the C++ code
+      if errno.errno == errno.EINTR:
+        pass
+        #print("SIGINT received, exiting, golden")
+        #sys.exit(1)
+
+      return None
+    else:
+      sz = msg.getSize()
+      m = msg.getData()[:sz]
+      del msg
+
+      return m
 
 cdef class PubSocket:
   cdef cppPubSocket * socket

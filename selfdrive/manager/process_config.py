@@ -39,6 +39,10 @@ procs = [
   PythonProcess("mapd", "selfdrive.mapd.mapd"),
   PythonProcess("systemd", "selfdrive.systemd", persistent=True),
   PythonProcess("gpxd", "selfdrive.gpxd.gpxd"),
+  
+  #golden
+  PythonProcess("msg_sync", "selfdrive.golden.msg_sync"),
+  PythonProcess("phone_control", "selfdrive.golden.phone_control"),
 
   # EON only
   PythonProcess("rtshield", "selfdrive.rtshield", enabled=EON),
