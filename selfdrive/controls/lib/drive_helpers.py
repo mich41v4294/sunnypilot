@@ -88,13 +88,13 @@ def update_v_cruise(v_cruise_kph, buttonEvents, button_timers, enabled, metric):
 
   if button_type:
     if reverse_acc_change:
-      v_cruise_delta = v_cruise_delta * (1 if long_press else 5)
+      v_cruise_delta = v_cruise_delta * (1 if long_press else 10)
       if not long_press and v_cruise_kph % v_cruise_delta != 0: # partial interval
         v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
       else:
         v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
     else:
-      v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
+      v_cruise_delta = v_cruise_delta * (10 if long_press else 1)
       if long_press and v_cruise_kph % v_cruise_delta != 0: # partial interval
         v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
       else:
@@ -131,13 +131,13 @@ def update_v_cruise_speed(v_cruise_kph, buttonEvents, button_timers, enabled, me
 
   if button_type:
     if reverse_acc_change:
-      v_cruise_delta = v_cruise_delta * (1 if long_press else 5)
+      v_cruise_delta = v_cruise_delta * (1 if long_press else 10)
       if not long_press and v_cruise_kph % v_cruise_delta != 0: # partial interval
         v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
       else:
         v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
     else:
-      v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
+      v_cruise_delta = v_cruise_delta * (10 if long_press else 1)
       if long_press and v_cruise_kph % v_cruise_delta != 0: # partial interval
         v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
       else:
